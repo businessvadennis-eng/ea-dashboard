@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meeting notes · Cio EA Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: slim tool rail + full-viewport tool screen (68px header, transcript card | 336px side column) */
+:root{
+  --surface:#EDF2F1; --card:#FFFFFF; --chip:#F2F6F5; --ink:#12201E; --muted:#5B6E6A; --line:#DCE5E2; --line-strong:#B9C9C5;
+  --accent:#0E7C6E; --accent-2:#2FA88F; --accent-soft:#D9F1EB; --accent-ink:#095A50; --hl:#BCE7DD;
+  --rec:#E5383B; --idle:#9AA8A5;
+  --av-a:#D9F1EB; --av-b:#E6E7F6; --av-c:#F6E9DC; --av-d:#E3EEF8;
+  --shadow:0 1px 2px rgba(18,32,30,.05),0 6px 20px -12px rgba(18,32,30,.18);
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --surface:#0C1413; --card:#142019; --card:#14201F; --chip:#1A2928; --ink:#E5EFED; --muted:#93A7A2; --line:#233331; --line-strong:#3A4F4C;
+  --accent:#3CC2AE; --accent-2:#1F8E7C; --accent-soft:#163E38; --accent-ink:#A4E9DC; --hl:#1F5B51;
+  --rec:#FF5A5D; --idle:#5E716D;
+  --av-a:#1C443E; --av-b:#2A2C4A; --av-c:#47362A; --av-d:#213A4F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.6); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --surface:#0C1413; --card:#14201F; --chip:#1A2928; --ink:#E5EFED; --muted:#93A7A2; --line:#233331; --line-strong:#3A4F4C;
+  --accent:#3CC2AE; --accent-2:#1F8E7C; --accent-soft:#163E38; --accent-ink:#A4E9DC; --hl:#1F5B51;
+  --rec:#FF5A5D; --idle:#5E716D;
+  --av-a:#1C443E; --av-b:#2A2C4A; --av-c:#47362A; --av-d:#213A4F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -14px rgba(0,0,0,.6); color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--surface);color:var(--ink);font-family:var(--f-body);font-size:14px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.app{display:grid;grid-template-columns:64px minmax(0,1fr);height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));background:var(--surface)}
+
+/* Tool rail */
+.rail{display:flex;flex-direction:column;align-items:center;gap:10px;padding-block:14px;background:var(--card);border-right:1px solid var(--line);padding-left:env(safe-area-inset-left,0px)}
+.rail-mark{text-decoration:none;font:700 13px/1 var(--f-display);letter-spacing:.02em;color:var(--accent-ink);background:var(--accent-soft);width:38px;height:38px;border-radius:11px;display:grid;place-items:center;margin-bottom:8px}
+.rail-btn{text-decoration:none;width:42px;height:42px;border-radius:12px;border:0;background:transparent;display:grid;place-items:center;color:var(--muted);cursor:pointer;position:relative}
+.rail-btn[aria-current="page"]{background:var(--accent-soft);color:var(--accent-ink)}
+.rail-btn svg{width:20px;height:20px}
+.rail-slot{width:42px;height:42px;border-radius:12px;border:1.5px dashed var(--line-strong);display:grid;place-items:center;color:var(--muted)}
+.rail-label{font-size:10px;color:var(--muted);text-align:center;line-height:1.2;max-width:56px}
+
+/* Screen */
+.screen{display:grid;grid-template-rows:68px minmax(0,1fr);min-width:0;min-height:0;padding-left:16px;padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:16px}
+
+/* MeetingHeader */
+.mh{display:flex;align-items:center;gap:14px;min-width:0}
+.mh-tile{flex:none;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:#fff;box-shadow:var(--shadow)}
+.mh-tile svg{width:20px;height:20px}
+.mh-text{min-width:0;flex:1}
+.mh-title{font:600 17px/1.2 var(--f-display);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.mh-sub{font-size:12.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec{flex:none;display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-weight:700;font-size:11.5px;letter-spacing:.08em;transition:background .25s,color .25s}
+.rec-dot{width:8px;height:8px;border-radius:50%;background:var(--rec);animation:blink 1.2s steps(1,end) infinite}
+.rec-clock{font:500 12.5px var(--f-mono);letter-spacing:0;font-variant-numeric:tabular-nums;color:var(--ink)}
+.paused .rec{background:var(--chip);color:var(--muted)}
+.paused .rec-dot{background:var(--idle);animation:none}
+.paused .rec-clock{color:var(--muted)}
+.pause-btn{flex:none;height:34px;padding:0 14px;border-radius:10px;border:1px solid var(--line-strong);background:var(--card);font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:background .15s,border-color .15s}
+.pause-btn:hover{background:var(--chip)}
+.pause-btn svg{width:14px;height:14px}
+@keyframes blink{0%{opacity:1}50%{opacity:.15}}
+
+.mh-back{display:none;text-decoration:none;font:600 26px/1 var(--f-display);color:var(--muted);padding:0 4px}
+/* Grid */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:16px;min-height:0}
+.card{background:var(--card);border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);min-width:0}
+
+/* Transcript card */
+.tcard{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:0;overflow:hidden}
+.parts{display:flex;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.chip{flex:none;display:flex;align-items:center;gap:9px;padding:4px 14px 4px 4px;border-radius:999px;border:1px solid var(--line);background:var(--card);transition:background .3s,box-shadow .3s,border-color .3s}
+.chip.active{background:var(--accent-soft);border-color:transparent;box-shadow:0 0 0 1.5px var(--accent)}
+.chip-name{font-weight:600;font-size:13px;line-height:1.15}
+.chip-co{font-size:11.5px;color:var(--muted);line-height:1.2}
+.chip-more{display:none;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:var(--muted)}
+.av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:700 11px/1 var(--f-body);letter-spacing:.02em;color:var(--ink)}
+.av.sm{width:20px;height:20px;font-size:8.5px}
+.av-a{background:var(--av-a)} .av-b{background:var(--av-b)} .av-c{background:var(--av-c)} .av-d{background:var(--av-d)}
+
+.tlist{overflow-y:auto;padding:8px 20px 12px;margin:0;list-style:none;overscroll-behavior:contain}
+.tline{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;padding-block:11px;animation:lineIn 320ms ease both}
+.tline .av{width:32px;height:32px}
+.tl-head{display:flex;align-items:baseline;gap:9px;margin-bottom:2px}
+.tl-name{font-weight:700;font-size:13.5px}
+.tl-time{font:500 11.5px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.tl-text{font-size:14.5px;line-height:1.6;margin:0;overflow-wrap:anywhere}
+.w{opacity:0;animation:wIn 280ms ease forwards}
+.caret{display:inline-block;width:2px;height:1.05em;margin-left:3px;vertical-align:-3px;border-radius:2px;background:var(--accent);opacity:.55;animation:caret 1s ease-in-out infinite}
+.hl{background-image:linear-gradient(var(--hl),var(--hl));background-repeat:no-repeat;background-position:0 0;background-size:0% 100%;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding:1px 2px;border-radius:4px;transition:background-size 700ms cubic-bezier(.25,.7,.2,1)}
+.hl.on{background-size:100% 100%}
+.tag{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;vertical-align:2px;animation:pop 380ms cubic-bezier(.34,1.56,.64,1) both}
+.tag svg{width:10px;height:10px}
+@keyframes wIn{from{opacity:0}to{opacity:1}}
+@keyframes caret{50%{opacity:.15}}
+@keyframes lineIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+
+.tfoot{display:flex;align-items:center;gap:10px;padding:11px 18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.eq{display:inline-flex;align-items:flex-end;gap:2px;height:14px}
+.eq span{width:3px;height:100%;border-radius:2px;background:var(--accent);transform-origin:bottom;animation:eq 900ms ease-in-out infinite}
+.eq span:nth-child(2){animation-delay:-.3s}.eq span:nth-child(3){animation-delay:-.6s}.eq span:nth-child(4){animation-delay:-.15s}
+.paused .eq span,.ended .eq span{animation-play-state:paused;opacity:.45}
+@keyframes eq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+.tfoot-right{margin-left:auto;font-size:11.5px}
+
+/* Side column */
+.side{display:flex;flex-direction:column;gap:16px;min-height:0}
+.scard{padding:16px 18px;flex:0 1 auto;max-height:46%;overflow-y:auto}
+.acard{padding:16px 18px 10px;flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.card-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.card-head h2{font:600 15px/1.2 var(--f-display);margin:0;letter-spacing:-.005em}
+.badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:11px;font-weight:700}
+.badge.count{font-family:var(--f-mono);font-weight:500;min-width:22px;justify-content:center}
+.sum{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.sum li{display:grid;grid-template-columns:6px minmax(0,1fr);gap:10px;font-size:13.5px;line-height:1.5}
+.sum li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:7px}
+.enter{animation:enter 380ms cubic-bezier(.2,.7,.2,1) both}
+@keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.alist{list-style:none;margin:0;padding:0 0 6px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:0}
+.empty{font-size:13px;color:var(--muted);line-height:1.5}
+.ai{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card)}
+.ai.enter{animation:enter 380ms cubic-bezier(.2,.7,.2,1) both,flash 2.2s ease-out both}
+@keyframes flash{from{background:var(--accent-soft)}to{background:var(--card)}}
+.cb{width:20px;height:20px;margin-top:1px;padding:0;border-radius:6px;border:1.5px solid var(--line-strong);background:var(--card);display:grid;place-items:center;cursor:pointer;transition:background .2s,border-color .2s,transform .35s cubic-bezier(.34,1.56,.64,1)}
+.cb svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.cb path{stroke-dasharray:16;stroke-dashoffset:16;transition:stroke-dashoffset .35s cubic-bezier(.34,1.56,.64,1) .05s}
+.cb[aria-checked="true"]{background:var(--accent);border-color:var(--accent);transform:scale(1.08)}
+.cb[aria-checked="true"] path{stroke-dashoffset:0}
+.cb:active{transform:scale(.88)}
+:root .cb[aria-checked="true"] svg{stroke:var(--card)}
+.ai-title{font-weight:600;font-size:13.5px;line-height:1.4;text-decoration:line-through;text-decoration-color:transparent;transition:color .25s,text-decoration-color .25s}
+.ai.done .ai-title{color:var(--muted);text-decoration-color:var(--muted)}
+.ai-meta{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+.owner{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.due{font:500 11px var(--f-mono);padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted);font-variant-numeric:tabular-nums}
+.due.soon{background:var(--accent-soft);color:var(--accent-ink)}
+.note{font-size:11px;color:var(--muted);padding-top:8px;border-top:1px solid var(--line);margin-top:auto}
+
+@media (prefers-reduced-motion: reduce){
+  .rec-dot,.eq span,.caret{animation:none}
+  .w,.tline,.enter,.ai.enter,.tag{animation-duration:1ms}
+  .hl{transition-duration:1ms}
+}
+
+@media (max-width:760px){
+  .app{grid-template-columns:1fr;height:auto;min-height:100dvh}
+  .rail{display:none}
+  .mh::before{content:none}
+  .screen{grid-template-rows:auto auto;padding-left:max(16px,env(safe-area-inset-left,0px));gap:4px}
+  .mh{min-height:68px;gap:10px}
+  .mh-tile{width:34px;height:34px}
+  .mh-title{font-size:15.5px}
+  .rec-clock{display:none}
+  .mh-back{display:block}
+  .pause-btn{padding:0 11px}
+  .main{grid-template-columns:1fr}
+  .tcard{height:64dvh}
+  .chip:nth-child(n+3):not(.chip-more){display:none}
+  .chip-more{display:inline-flex}
+  .side{display:flex}
+  .scard{max-height:none}
+  .tlist{padding-inline:14px}
+}
+</style>
+
+</head>
+<body>
+<div class="app" id="app">
+  <nav class="rail" aria-label="Dashboard sections">
+    <a class="rail-mark" href="./#projects" aria-label="Cio EA Dashboard home">EA</a>
+    <a class="rail-btn" href="./#projects" aria-label="Projects" title="Projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h6M7 13h10M7 17h4"/></svg></a>
+    <a class="rail-btn" href="./#tasks" aria-label="Tasks" title="Tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></a>
+    <a class="rail-btn" aria-current="page" href="meetings.html" aria-label="Meeting notes" title="Meeting notes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></a>
+    <a class="rail-btn" href="./#resources" aria-label="Resources" title="Resources"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></a>
+  </nav>
+  <div class="screen" id="screen"></div>
+</div>
+
+<script>
+/* ---------- data ---------- */
+const today = new Date(); today.setHours(0,0,0,0);
+const addDays = (d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const nextWeekday = (d,wd)=>{let x=addDays(d,1);while(x.getDay()!==wd)x=addDays(x,1);return x};
+const fmtShort = d=>d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+const fmtLong = d=>d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+function dueLabel(d){const n=Math.round((d-today)/864e5);return n===0?'Today':n===1?'Tomorrow':fmtShort(d)}
+
+const PEOPLE = {
+  dan:  {name:'Daniel Brooks', first:'Daniel', co:'CEO · Halcyon Advisory', ini:'DB', av:'a'},
+  cio:  {name:'Cio', first:'Cio', co:'Executive Assistant', ini:'CI', av:'b'},
+  priya:{name:'Priya Natarajan', first:'Priya', co:'CFO · Halcyon Advisory', ini:'PN', av:'c'},
+  tom:  {name:'Tom Alvarez', first:'Tom', co:'Partner · Brightline Capital', ini:'TA', av:'d'},
+};
+const friday = nextWeekday(today,5);
+const SCRIPT = [
+  {who:'dan', t:65, text:"Okay, let's get going. Main goal today is locking the board prep for next week and the Singapore trip."},
+  {who:'priya', t:140, text:"Q3 numbers are final. Revenue closed at 4.2 million, about 9 percent over plan.", fact:"Q3 revenue closed at $4.2M, about 9% over plan."},
+  {who:'tom', t:211, text:"Brightline is happy with that. I'll have our analyst send the cap table update tonight.", act:{phrase:"have our analyst send the cap table update tonight", title:"Send the cap table update", owner:'tom', due:today}},
+  {who:'cio', text:"The board will want the hiring plan too, so I'll send the updated board deck to everyone by Wednesday.", act:{phrase:"send the updated board deck to everyone by Wednesday", title:"Send updated board deck with hiring plan", owner:'cio', due:nextWeekday(today,3)}, fact:"Board deck adds a hiring plan section."},
+  {who:'dan', text:"Good. For Singapore, I'd rather fly out Sunday night so I land fresh for the Tuesday client meeting.", fact:"Daniel flies to Singapore Sunday night for the Tuesday client meeting."},
+  {who:'cio', text:"Noted. I'll book the Sunday flight and a hotel near Marina Bay by tomorrow.", act:{phrase:"book the Sunday flight and a hotel near Marina Bay", title:"Book Sunday flight and Marina Bay hotel", owner:'cio', due:addDays(today,1)}},
+  {who:'priya', text:"Can we also move the budget review? Thursday clashes with the audit call."},
+  {who:'dan', text:"Let's push it to Friday morning. Cio, can you handle the invites?", fact:`Budget review moves from Thursday to Friday morning (${fmtShort(friday)}).`},
+  {who:'cio', text:"Yes, I'll reschedule the budget review to Friday at 9 and update the invites today.", act:{phrase:"reschedule the budget review to Friday at 9", title:"Reschedule budget review to Fri 9:00 AM", owner:'cio', due:today}},
+  {who:'tom', text:"On our side, I'll share the term sheet comments before the board meeting.", act:{phrase:"share the term sheet comments", title:"Share term sheet comments", owner:'tom', due:addDays(today,6)}},
+  {who:'priya', text:"And I'll pull the headcount costs into one sheet for Daniel.", act:{phrase:"pull the headcount costs into one sheet", title:"Put headcount costs in one sheet", owner:'priya', due:addDays(today,2)}},
+  {who:'dan', text:"Perfect. Same time next week then. Thanks, everyone.", fact:"Next sync is the same time next week."},
+];
+const SEEDED = 3;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms=>new Promise(r=>setTimeout(r,ms));
+const h = (tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e};
+const esc = s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clockStr = s=>[Math.floor(s/3600),Math.floor(s/60)%60,s%60].map(n=>String(n).padStart(2,'0')).join(':');
+const avatar = (p,sm)=>`<span class="av av-${p.av}${sm?' sm':''}" aria-hidden="true">${p.ini}</span>`;
+
+/* ---------- components ---------- */
+function MeetingHeader({title, sub, onToggle}){
+  const el = h('header','mh');
+  el.innerHTML = `
+    <a class="mh-back" href="./#projects" aria-label="Back to dashboard">‹</a><div class="mh-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3"/></svg></div>
+    <div class="mh-text"><h1 class="mh-title">${esc(title)}</h1><div class="mh-sub">${esc(sub)}</div></div>
+    <div class="rec" role="status" aria-label="Recording"><span class="rec-dot" aria-hidden="true"></span><span class="rec-label">REC</span><span class="rec-clock" aria-hidden="true">00:00:00</span></div>
+    <button class="pause-btn" type="button" aria-pressed="false"></button>`;
+  const btn = el.querySelector('.pause-btn'), clock = el.querySelector('.rec-clock'), rec = el.querySelector('.rec'), lbl = el.querySelector('.rec-label');
+  const icons = {pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>', play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg>'};
+  function setPaused(p){btn.innerHTML = p?`${icons.play}Resume notes`:`${icons.pause}Pause notes`; btn.setAttribute('aria-pressed',p); lbl.textContent=p?'PAUSED':'REC'; rec.setAttribute('aria-label',p?'Recording paused':'Recording')}
+  btn.addEventListener('click',onToggle); setPaused(false);
+  return {el, setPaused, setClock:s=>clock.textContent=clockStr(s), setEnded(){lbl.textContent='ENDED';rec.setAttribute('aria-label','Recording ended');btn.disabled=true;btn.style.opacity=.5}};
+}
+
+function Participants({people}){
+  const el = h('div','parts'); el.setAttribute('aria-label','Participants'); el.setAttribute('role','list');
+  const chips = {};
+  Object.entries(people).forEach(([id,p])=>{
+    const c = h('div','chip',`${avatar(p)}<span><span class="chip-name">${esc(p.name)}</span><br><span class="chip-co">${esc(p.co)}</span></span>`);
+    c.setAttribute('role','listitem'); chips[id]=c; el.appendChild(c);
+  });
+  const more = h('div','chip chip-more',`+${Object.keys(people).length-2}`); more.setAttribute('aria-hidden','true'); el.appendChild(more);
+  return {el, setActive(id){Object.entries(chips).forEach(([k,c])=>{c.classList.toggle('active',k===id); c.setAttribute('aria-current',k===id?'true':'false')})}};
+}
+
+function TranscriptLine({person, time}){
+  const el = h('li','tline');
+  el.innerHTML = `${avatar(person)}<div><div class="tl-head"><span class="tl-name">${esc(person.name)}</span><span class="tl-time">${clockStr(time)}</span></div><p class="tl-text"><span class="sr-only"></span><span class="vis" aria-hidden="true"></span></p></div>`;
+  return {el, sr:el.querySelector('.sr-only'), vis:el.querySelector('.vis'), text:el.querySelector('.tl-text')};
+}
+
+function Transcript(){
+  const el = h('section','card tcard'); el.setAttribute('aria-label','Live transcript');
+  const list = h('ol','tlist'); list.setAttribute('aria-live','polite'); list.setAttribute('aria-relevant','additions');
+  const foot = h('div','tfoot',`<span class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span></span><span class="foot-text">Transcribing in English</span><span class="tfoot-right">Sample meeting</span>`);
+  return {el, list, foot, footText:foot.querySelector('.foot-text'), scrollEnd(smooth=true){list.scrollTo({top:list.scrollHeight,behavior:smooth&&!reduced?'smooth':'auto'})}};
+}
+
+function SummaryCard(){
+  const el = h('section','card scard'); el.setAttribute('aria-labelledby','sum-h');
+  el.innerHTML = `<div class="card-head"><h2 id="sum-h">Summary</h2><span class="badge">Auto</span></div>`;
+  const ul = h('ul','sum'); el.appendChild(ul);
+  return {el, add(text,animate){const li=h('li',animate?'enter':'');li.textContent=text;ul.appendChild(li);if(animate)el.scrollTo({top:el.scrollHeight,behavior:reduced?'auto':'smooth'})}};
+}
+
+function ActionItems(){
+  const el = h('section','card acard'); el.setAttribute('aria-labelledby','act-h');
+  el.innerHTML = `<div class="card-head"><h2 id="act-h">Action items</h2><span class="badge count" aria-label="0 items">0</span></div>`;
+  const ul = h('ul','alist'); el.appendChild(ul);
+  const count = el.querySelector('.count');
+  el.appendChild(h('div','note','Check items off as they get done. Example meeting data.'));
+  let n=0;
+  function add(a,animate){
+    const p = PEOPLE[a.owner]; n++; count.textContent=n; count.setAttribute('aria-label',`${n} items`);
+    const li = h('li','ai'+(animate?' enter':''));
+    const lab = `${a.title}, owner ${p.first}, due ${dueLabel(a.due)}`;
+    const soon = (a.due-today)/864e5<=1;
+    li.innerHTML = `<button type="button" class="cb" role="checkbox" aria-checked="false" aria-label="${esc(lab)}"><svg viewBox="0 0 14 14"><path d="M2.5 7.5l3 3 6-7"/></svg></button>
+      <div><div class="ai-title">${esc(a.title)}</div><div class="ai-meta"><span class="owner">${avatar(p,true)}${esc(p.first)}</span><span class="due${soon?' soon':''}">${dueLabel(a.due)}</span></div></div>`;
+    const cb = li.querySelector('.cb');
+    cb.addEventListener('click',()=>{const on=cb.getAttribute('aria-checked')!=='true';cb.setAttribute('aria-checked',on);li.classList.toggle('done',on)});
+    ul.appendChild(li);
+    if(animate) ul.scrollTo({top:ul.scrollHeight,behavior:reduced?'auto':'smooth'});
+  }
+  return {el, add};
+}
+
+/* ---------- app ---------- */
+const app = document.getElementById('app'), screen = document.getElementById('screen');
+let paused=false, ended=false, elapsed=252;
+
+const header = MeetingHeader({
+  title:'Q4 board prep · weekly sync',
+  sub:`${fmtLong(today)} · Zoom · with Halcyon Advisory and Brightline Capital`,
+  onToggle(){paused=!paused;app.classList.toggle('paused',paused);header.setPaused(paused)}
+});
+const parts = Participants({people:PEOPLE});
+const tr = Transcript();
+const summary = SummaryCard();
+const actions = ActionItems();
+
+tr.el.append(parts.el, tr.list, tr.foot);
+const main = h('div','main'); const side = h('div','side');
+side.append(summary.el, actions.el); main.append(tr.el, side);
+screen.append(header.el, main);
+
+function renderStatic(line){
+  const p = PEOPLE[line.who]; const L = TranscriptLine({person:p,time:line.t});
+  L.sr.textContent = line.text;
+  if(line.act){const [a,b]=line.text.split(line.act.phrase);L.vis.innerHTML=`${esc(a)}<span class="hl on">${esc(line.act.phrase)}</span>${esc(b)}`;L.text.insertAdjacentHTML('beforeend',tagHTML())}
+  else L.vis.textContent=line.text;
+  L.el.style.animation='none'; tr.list.appendChild(L.el);
+  if(line.fact) summary.add(line.fact,false);
+  if(line.act) actions.add(line.act,false);
+}
+const tagHTML = ()=>`<span class="tag"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5l2.5 2.5L10 3"/></svg>Action item</span>`;
+
+async function streamLine(line){
+  const p = PEOPLE[line.who]; line.t = elapsed;
+  parts.setActive(line.who);
+  const L = TranscriptLine({person:p,time:line.t});
+  L.sr.textContent = line.text;
+  tr.list.appendChild(L.el); tr.scrollEnd();
+  const caret = h('span','caret'); L.vis.appendChild(caret);
+  // tokens: words before phrase, phrase words (inside .hl), after
+  let segs=[{text:line.text,hl:false}];
+  if(line.act){const i=line.text.indexOf(line.act.phrase);segs=[{text:line.text.slice(0,i),hl:false},{text:line.act.phrase,hl:true},{text:line.text.slice(i+line.act.phrase.length),hl:false}]}
+  let mark=null, first=true;
+  for(const s of segs){
+    let target = L.vis;
+    if(s.hl){mark=h('span','hl');L.vis.insertBefore(mark,caret);target=mark}
+    const words = s.text.match(/\s*\S+/g)||[];
+    for(const w of words){
+      const sp=h('span','w');sp.textContent=w;
+      if(s.hl) target.appendChild(sp); else L.vis.insertBefore(sp,caret);
+      if(first){first=false}
+      await sleep(90);
+      if(L.vis.lastChild===caret) {}
+      if(tr.list.scrollHeight-tr.list.scrollTop-tr.list.clientHeight<120) tr.scrollEnd(false);
+    }
+  }
+  caret.remove();
+  await sleep(200);
+  if(mark){
+    mark.classList.add('on');
+    await sleep(reduced?0:520);
+    L.text.insertAdjacentHTML('beforeend',tagHTML());
+    await sleep(reduced?0:260);
+    actions.add(line.act,true);
+  }
+  if(line.fact){await sleep(reduced?0:300); summary.add(line.fact,true)}
+  tr.scrollEnd();
+}
+
+const waitResume = async()=>{while(paused) await sleep(150)};
+
+async function run(){
+  SCRIPT.slice(0,SEEDED).forEach(renderStatic);
+  parts.setActive(SCRIPT[SEEDED-1].who);
+  tr.scrollEnd(false);
+  for(const line of SCRIPT.slice(SEEDED)){
+    await sleep(1500); await waitResume();
+    await streamLine(line);
+  }
+  await sleep(1500);
+  ended=true; app.classList.add('ended'); header.setEnded(); parts.setActive(null);
+  tr.footText.textContent='Meeting ended · transcript complete';
+}
+header.setClock(elapsed);
+setInterval(()=>{if(!paused&&!ended){elapsed++;header.setClock(elapsed)}},1000);
+run();
+</script>
+
+</body>
+</html>
