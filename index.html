@@ -338,7 +338,7 @@ const state = {
 save('ea.tasks.v1', state.tasks);
 
 /* ---------- TopNav ---------- */
-const TABS = [{id:'projects',label:'Projects'},{id:'tasks',label:'Tasks'},{id:'meetings',label:'Meeting notes',href:'meetings.html'},{id:'resources',label:'Resources'}];
+const TABS = [{id:'projects',label:'Projects'},{id:'tasks',label:'Tasks'},{id:'meetings',label:'Meeting notes',href:'meetings.html'},{id:'resources',label:'Resources'},{id:'tracker',label:'Tracker',href:'tracker.html'}];
 const NEW_LABEL = {projects:'New project', tasks:'New task', resources:'New link'};
 function TopNav(){
   const tabHTML = TABS.map(t=>t.href

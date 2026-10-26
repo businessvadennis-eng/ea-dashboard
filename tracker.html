@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker · Cio EA Dashboard</title>
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#f0f2f5; --border:#e2e5ea;
+  --text:#1c2230; --muted:#6b7385; --accent:#2f6fde; --accent-soft:#e7effc; --accent-text:#ffffff;
+  --pending:#b7791f; --pending-bg:#fdf3e1;
+  --interview:#2f6fde; --interview-bg:#e7effc;
+  --passed:#1f8a5b; --passed-bg:#e2f5ec;
+  --rejected:#c0392b; --rejected-bg:#fbe7e5;
+  --shadow:0 1px 2px rgba(20,30,50,.06),0 2px 8px rgba(20,30,50,.04);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151b; --surface:#1a1e26; --surface-2:#222733; --border:#2d3340;
+    --text:#e6e9ef; --muted:#9aa3b5; --accent:#6c9cf0; --accent-soft:#1f2c45; --accent-text:#0f1420;
+    --pending:#e0a64b; --pending-bg:#3a2f1c; --interview:#6c9cf0; --interview-bg:#1f2c45;
+    --passed:#4cc08b; --passed-bg:#183326; --rejected:#ec7a6d; --rejected-bg:#3b1f1c;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12151b; --surface:#1a1e26; --surface-2:#222733; --border:#2d3340;
+  --text:#e6e9ef; --muted:#9aa3b5; --accent:#6c9cf0; --accent-soft:#1f2c45; --accent-text:#0f1420;
+  --pending:#e0a64b; --pending-bg:#3a2f1c; --interview:#6c9cf0; --interview-bg:#1f2c45;
+  --passed:#4cc08b; --passed-bg:#183326; --rejected:#ec7a6d; --rejected-bg:#3b1f1c;
+  --shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+.app{display:flex;min-height:100vh}
+/* Sidebar */
+.side{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.brand{font-weight:700;font-size:16px;padding:0 10px 16px}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.nav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 10px;border:0;background:none;border-radius:8px;cursor:pointer;color:var(--muted)}
+.nav:hover{background:var(--surface-2);color:var(--text)}
+.nav.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav svg{width:18px;height:18px;flex-shrink:0}
+.nav .ct{margin-left:auto;font-size:12px;opacity:.8}
+.side-foot{margin-top:auto;border-top:1px solid var(--border);padding:14px 4px 0;display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted)}
+.side-foot .row{display:flex;gap:6px}
+.side-foot select{padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface)}
+/* Main */
+main{flex:1;min-width:0;padding:24px 28px 60px;max-width:1200px}
+.head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:18px}
+.head h1{font-size:22px;margin:0 auto 0 0}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.tools input,.tools select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+.tools input[type=search]{flex:1;min-width:180px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--rejected);border-color:var(--rejected)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.icon-btn{border:0;background:none;padding:5px;border-radius:6px;cursor:pointer;color:var(--muted);display:inline-flex}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.icon-btn.del:hover{color:var(--rejected)}
+.icon-btn svg{width:16px;height:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.pad{padding:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.stat{padding:14px 16px}
+.stat .lbl{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.stat .num{font-size:26px;font-weight:700;margin:2px 0}
+.stat .sub{color:var(--muted);font-size:12px}
+.stat.click{cursor:pointer}
+.stat.click:hover{border-color:var(--accent)}
+.stat.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.sec-title{font-size:14px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;justify-content:space-between}
+.sec-title a{font-weight:400;font-size:12px;cursor:pointer}
+.mini{list-style:none;margin:0;padding:0}
+.mini li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)}
+.mini li:first-child{border-top:0}
+.mini .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini .m{color:var(--muted);font-size:12px;white-space:nowrap}
+/* Tables */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td .sub{color:var(--muted);font-size:12px}
+td.act{white-space:nowrap;text-align:right;width:1%}
+td.num,th.num{text-align:right}
+tr.done td{color:var(--muted)}
+tr.done .ttl{text-decoration:line-through}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.s-Pending{background:var(--pending-bg);color:var(--pending)}
+.s-For-Interview{background:var(--interview-bg);color:var(--interview)}
+.s-Passed{background:var(--passed-bg);color:var(--passed)}
+.s-Rejected{background:var(--rejected-bg);color:var(--rejected)}
+.p-High{background:var(--rejected-bg);color:var(--rejected)}
+.p-Medium{background:var(--pending-bg);color:var(--pending)}
+.p-Low{background:var(--surface-2);color:var(--muted)}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:12px;background:var(--surface-2);color:var(--muted)}
+select.inline{border:0;border-radius:999px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer;appearance:auto}
+.overdue{color:var(--rejected);font-weight:600}
+.chk-cell{width:1%}
+.chk-cell input{width:17px;height:17px;cursor:pointer;accent-color:var(--accent)}
+.pipe{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--surface-2);margin:6px 0 10px}
+.pipe span{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.empty b{display:block;color:var(--text);font-size:15px;margin-bottom:4px}
+.empty .btn{margin-top:12px}
+/* Cards grid (templates, notes) */
+.grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.gcard{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.gcard h3{margin:0;font-size:15px;display:flex;gap:6px;align-items:flex-start}
+.gcard h3 span{flex:1}
+.gcard .body{color:var(--muted);white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.gcard .meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.gcard .foot{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:6px;border-top:1px solid var(--border)}
+.gcard .foot .sp{margin-left:auto}
+.file-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface-2);border-radius:8px;font-size:13px;overflow:hidden}
+.file-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pin-on{color:var(--pending)}
+/* Modal */
+.backdrop{position:fixed;inset:0;background:rgba(10,15,25,.5);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:50}
+.modal{background:var(--surface);border-radius:12px;width:100%;max-width:620px;padding:22px;border:1px solid var(--border)}
+.modal h2{margin:0 0 16px;font-size:18px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld.full{grid-column:1/-1}
+.fld>label{font-size:12px;font-weight:600;color:var(--muted)}
+.fld input:not([type=checkbox]),.fld select,.fld textarea{padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);width:100%}
+.fld textarea{resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus,.tools input:focus,.tools select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.fld .hint{font-size:12px;color:var(--muted)}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;padding-top:6px}
+.mact{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:13px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.warn{background:var(--pending-bg);color:var(--pending);padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px}
+.hide-sm{}
+@media (max-width:760px){
+  .app{flex-direction:column}
+  .side{width:auto;height:auto;position:sticky;top:0;z-index:10;flex-direction:row;overflow-x:auto;padding:8px 12px;border-right:0;border-bottom:1px solid var(--border);gap:2px}
+  .brand,.side-foot,.nav .ct{display:none}
+  .nav{width:auto;white-space:nowrap;padding:8px 10px}
+  main{padding:18px 16px 60px}
+  .fgrid{grid-template-columns:1fr}
+  .hide-sm{display:none}
+  .mobile-backup{display:flex!important}
+}
+.mobile-backup{display:none;gap:8px;margin-top:24px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side"></aside>
+  <main id="main"></main>
+</div>
+<div id="modal-root"></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+
+<script>
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const today = () => ymd(new Date());
+const parseD = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const fmtDate = s => s ? parseD(s).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}) : '—';
+const fmtSize = b => !b ? '' : b < 1024 ? b + ' B' : b < 1048576 ? (b/1024).toFixed(0) + ' KB' : (b/1048576).toFixed(1) + ' MB';
+const num = v => { const n = Number(v); return isFinite(n) ? n : 0; };
+const fmtH = h => (Math.round(h * 100) / 100).toLocaleString(undefined, {maximumFractionDigits:2});
+const cls = s => String(s).replace(/\s+/g, '-');
+function lsGet(k, d){ try { return localStorage.getItem(k) ?? d; } catch(e){ return d; } }
+function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+let currency = lsGet('cio-currency', '$');
+const money = n => currency + num(n).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+const ICONS = {
+  overview:'<path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/>',
+  applications:'<path d="M4 7h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  templates:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6"/>',
+  tasks:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h11"/>',
+  hours:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  notes:'<path d="M5 4h14v11l-5 5H5zM14 20v-5h5"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/>',
+  del:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  link:'<path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/>',
+  pin:'<path d="M12 17v4M8 3h8l-1 6 3 4H6l3-4z"/>',
+  file:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5"/>',
+};
+const ico = (n, size) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${size?`style="width:${size}px;height:${size}px"`:''}>${ICONS[n]}</svg>`;
+
+/* ---------- Schema ---------- */
+const STATUSES = ['Pending', 'For Interview', 'Passed', 'Rejected'];
+const STATUS_COLOR = {'Pending':'var(--pending)', 'For Interview':'var(--interview)', 'Passed':'var(--passed)', 'Rejected':'var(--rejected)'};
+const DEFAULT_SOURCES = ['OnlineJobs.ph','LinkedIn','Upwork','Indeed','JobStreet','Facebook Group','Referral','Company Website','Other'];
+const TEMPLATE_CATS = ['Contract','Proposal','Invoice','Onboarding','SOP','Email','Cover Letter','Other'];
+
+const SCHEMA = {
+  applications: { label:'Application', fields:[
+    {k:'role', l:'Position / Role', t:'text', req:1, ph:'e.g. Executive Assistant'},
+    {k:'company', l:'Client / Company', t:'text'},
+    {k:'source', l:'Job post source', t:'text', list:'sources', ph:'e.g. OnlineJobs.ph'},
+    {k:'link', l:'Job post link', t:'url', ph:'https://'},
+    {k:'dateApplied', l:'Date applied', t:'date', def:today},
+    {k:'status', l:'Status', t:'select', opts:STATUSES, def:'Pending'},
+    {k:'rate', l:'Rate (asked / offered)', t:'text', ph:'e.g. $8/hr'},
+    {k:'followUp', l:'Interview / follow-up date', t:'date'},
+    {k:'notes', l:'Notes', t:'textarea', rows:3},
+  ]},
+  templates: { label:'Template', fields:[
+    {k:'name', l:'Template name', t:'text', req:1, ph:'e.g. Standard EA Service Agreement'},
+    {k:'category', l:'Category', t:'select', opts:TEMPLATE_CATS, def:'Contract'},
+    {k:'file', l:'Upload file (PDF, DOCX, etc.)', t:'file', full:1},
+    {k:'description', l:'Description / when to use', t:'textarea', rows:2},
+    {k:'content', l:'Template text (optional — paste here to copy quickly)', t:'textarea', rows:6},
+  ]},
+  tasks: { label:'Task', fields:[
+    {k:'title', l:'Task', t:'text', req:1, full:1},
+    {k:'due', l:'Due date', t:'date'},
+    {k:'priority', l:'Priority', t:'select', opts:['High','Medium','Low'], def:'Medium'},
+    {k:'status', l:'Status', t:'select', opts:['To do','In progress','Done'], def:'To do'},
+    {k:'related', l:'Client / project', t:'text', list:'clients'},
+    {k:'notes', l:'Notes', t:'textarea', rows:3},
+  ]},
+  hours: { label:'Time Entry', fields:[
+    {k:'date', l:'Date', t:'date', def:today, req:1},
+    {k:'client', l:'Client / project', t:'text', list:'clients', req:1},
+    {k:'task', l:'What you worked on', t:'text', full:1},
+    {k:'hours', l:'Hours', t:'number', step:'0.25', req:1, ph:'e.g. 2.5'},
+    {k:'rate', l:'Hourly rate (optional)', t:'number', step:'0.01'},
+    {k:'billable', l:'Billable', t:'check', cl:'This time is billable', def:true},
+    {k:'notes', l:'Notes', t:'textarea', rows:2},
+  ]},
+  notes: { label:'Note', fields:[
+    {k:'title', l:'Title', t:'text', req:1},
+    {k:'tag', l:'Tag', t:'text', list:'tags', ph:'e.g. Client, Login info, Ideas'},
+    {k:'body', l:'Note', t:'textarea', rows:9},
+    {k:'pinned', l:'Pin', t:'check', cl:'Pin to overview'},
+  ]},
+};
+const STORES = Object.keys(SCHEMA);
+const VIEWS = [
+  ['overview','Overview'], ['applications','Applications'], ['templates','Templates'],
+  ['tasks','Tasks'], ['hours','Hours'], ['notes','Notes'],
+];
+
+/* ---------- Storage (IndexedDB, falls back to memory) ---------- */
+let db = null;
+const memStore = {};
+const state = {};
+function openDB(){
+  return new Promise(res => {
+    try {
+      const r = indexedDB.open('cio-ea-dashboard', 1);
+      r.onupgradeneeded = () => { const d = r.result; STORES.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, {keyPath:'id'}); }); };
+      r.onsuccess = () => { db = r.result; res(true); };
+      r.onerror = () => res(false);
+      r.onblocked = () => res(false);
+    } catch(e){ res(false); }
+  });
+}
+function tx(store, mode, fn){
+  return new Promise((res, rej) => {
+    const t = db.transaction(store, mode); const os = t.objectStore(store);
+    const req = fn(os);
+    t.oncomplete = () => res(req ? req.result : undefined);
+    t.onerror = () => rej(t.error);
+  });
+}
+async function loadAll(){
+  for (const s of STORES) state[s] = db ? await tx(s, 'readonly', os => os.getAll()) : Object.values(memStore[s] || {});
+}
+async function save(store, obj){
+  if (db) await tx(store, 'readwrite', os => os.put(obj));
+  else (memStore[store] ||= {})[obj.id] = obj;
+  const i = state[store].findIndex(r => r.id === obj.id);
+  if (i >= 0) state[store][i] = obj; else state[store].push(obj);
+}
+async function remove(store, id){
+  if (db) await tx(store, 'readwrite', os => os.delete(id));
+  else if (memStore[store]) delete memStore[store][id];
+  state[store] = state[store].filter(r => r.id !== id);
+}
+async function clearAll(){
+  for (const s of STORES){ if (db) await tx(s, 'readwrite', os => os.clear()); memStore[s] = {}; state[s] = []; }
+}
+
+/* ---------- UI state ---------- */
+const ui = {
+  view: lsGet('cio-view', 'overview'),
+  applications:{q:'', status:'All', source:'All'},
+  templates:{q:'', cat:'All'},
+  tasks:{q:'', show:'Open', priority:'All'},
+  hours:{period:'This week', client:'All'},
+  notes:{q:'', tag:'All'},
+};
+if (!VIEWS.some(v => v[0] === ui.view)) ui.view = 'overview';
+
+/* ---------- Sidebar ---------- */
+function renderSide(){
+  const counts = {
+    applications: state.applications.filter(a => a.status === 'Pending' || a.status === 'For Interview').length,
+    tasks: state.tasks.filter(t => t.status !== 'Done').length,
+    templates: state.templates.length,
+    notes: state.notes.length,
+  };
+  $('#side').innerHTML = `
+    <a class="brand" href="./#projects" style="text-decoration:none;color:inherit">Cio EA Dashboard<small>‹ Back to main dashboard</small></a>
+    ${`<a class="nav" href="./#projects" style="text-decoration:none">${ico('overview')}<span>Main dashboard</span></a>`}${VIEWS.map(([k, l]) => `<button class="nav ${ui.view===k?'on':''}" data-act="nav" data-view="${k}">${ico(k)}<span>${l}</span>${counts[k]?`<span class="ct">${counts[k]}</span>`:''}</button>`).join('')}
+    <div class="side-foot">
+      <div>${db ? 'Saved in this browser.' : '<b>Not saving</b> — browser storage is blocked.'} Export a backup regularly.</div>
+      <div class="row"><button class="btn sm" data-act="export">Export backup</button><button class="btn sm" data-act="import">Import</button></div>
+      <label>Currency <select id="currency">${['$','₱','A$','£','€'].map(c=>`<option ${c===currency?'selected':''}>${c}</option>`).join('')}</select></label>
+    </div>`;
+  $('#currency').onchange = e => { currency = e.target.value; lsSet('cio-currency', currency); render(); };
+}
+
+/* ---------- Views ---------- */
+function render(){
+  renderSide();
+  const v = ui.view;
+  const m = $('#main');
+  let html = db ? '' : `<div class="warn">Your browser is blocking storage here, so entries will disappear on refresh. Open this file directly in Chrome (or from your GitHub site) to save normally.</div>`;
+  html += VIEW_RENDER[v].head();
+  html += `<div id="list">${VIEW_RENDER[v].list()}</div>`;
+  html += `<div class="mobile-backup"><button class="btn sm" data-act="export">Export backup</button><button class="btn sm" data-act="import">Import backup</button></div>`;
+  m.innerHTML = html;
+  bindTools();
+}
+function renderList(){ $('#list').innerHTML = VIEW_RENDER[ui.view].list(); }
+
+function headBar(title, store, tools){
+  return `<div class="head"><h1>${title}</h1>${store?`<button class="btn primary" data-act="add" data-store="${store}">+ Add ${SCHEMA[store].label.toLowerCase()}</button>`:''}</div>${tools?`<div class="tools">${tools}</div>`:''}`;
+}
+const searchBox = (store, ph) => `<input type="search" data-ui="${store}.q" placeholder="${ph}" value="${esc(ui[store].q)}">`;
+const selBox = (key, opts, label) => {
+  const [s, k] = key.split('.');
+  return `<select data-ui="${key}" aria-label="${label}">${opts.map(o => `<option value="${esc(o)}" ${ui[s][k]===o?'selected':''}>${esc(o==='All'?label+': All':o)}</option>`).join('')}</select>`;
+};
+function bindTools(){
+  document.querySelectorAll('[data-ui]').forEach(el => {
+    const [s, k] = el.dataset.ui.split('.');
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => { ui[s][k] = el.value; renderList(); });
+  });
+}
+const actions = (store, id, extra='') => `<td class="act">${extra}<button class="icon-btn" title="Edit" data-act="edit" data-store="${store}" data-id="${id}">${ico('edit')}</button><button class="icon-btn del" title="Delete" data-act="del" data-store="${store}" data-id="${id}">${ico('del')}</button></td>`;
+const emptyState = (store, title, msg) => `<div class="card empty"><b>${title}</b>${msg}<br><button class="btn primary" data-act="add" data-store="${store}">+ Add ${SCHEMA[store].label.toLowerCase()}</button></div>`;
+const match = (r, q, keys) => !q || keys.some(k => String(r[k] ?? '').toLowerCase().includes(q.toLowerCase()));
+const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+
+function weekRange(offset=0){
+  const d = new Date(); d.setHours(0,0,0,0);
+  const day = (d.getDay() + 6) % 7; // Monday = 0
+  const start = new Date(d); start.setDate(d.getDate() - day + offset*7);
+  const end = new Date(start); end.setDate(start.getDate() + 6);
+  return [ymd(start), ymd(end)];
+}
+function inPeriod(date, period){
+  if (!date || period === 'All time') return true;
+  if (period === 'This week'){ const [a,b] = weekRange(0); return date >= a && date <= b; }
+  if (period === 'Last week'){ const [a,b] = weekRange(-1); return date >= a && date <= b; }
+  const t = today();
+  if (period === 'This month') return date.slice(0,7) === t.slice(0,7);
+  if (period === 'Last month'){ const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-1); return date.slice(0,7) === ymd(d).slice(0,7); }
+  return true;
+}
+function hoursTotals(rows){
+  let total=0, bill=0, amt=0;
+  rows.forEach(r => { const h = num(r.hours); total += h; if (r.billable){ bill += h; amt += h * num(r.rate); } });
+  return {total, bill, amt};
+}
+
+const VIEW_RENDER = {
+  /* ---- Overview ---- */
+  overview: {
+    head: () => `<div class="head"><h1>Overview</h1><span class="hide-sm" style="color:var(--muted)">${new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</span></div>`,
+    list: () => {
+      const A = state.applications, T = state.tasks;
+      const sc = s => A.filter(a => a.status === s).length;
+      const open = T.filter(t => t.status !== 'Done');
+      const overdue = open.filter(t => t.due && t.due < today()).length;
+      const wk = hoursTotals(state.hours.filter(h => inPeriod(h.date, 'This week')));
+      const upcoming = [...open].sort((a,b) => (a.due||'9999').localeCompare(b.due||'9999')).slice(0,6);
+      const recent = [...A].sort((a,b) => (b.dateApplied||'').localeCompare(a.dateApplied||'')).slice(0,6);
+      const interviews = A.filter(a => a.status === 'For Interview' && a.followUp && a.followUp >= today()).sort((a,b)=>a.followUp.localeCompare(b.followUp));
+      const pinned = state.notes.filter(n => n.pinned).slice(0,4);
+      const total = A.length || 1;
+      return `
+      <div class="stats">
+        <div class="card stat click" data-act="nav" data-view="applications"><div class="lbl">Applications sent</div><div class="num">${A.length}</div><div class="sub">${sc('Pending')} pending · ${sc('For Interview')} interview · ${sc('Passed')} passed</div></div>
+        <div class="card stat click" data-act="nav" data-view="tasks"><div class="lbl">Open tasks</div><div class="num">${open.length}</div><div class="sub ${overdue?'overdue':''}">${overdue ? overdue + ' overdue' : 'Nothing overdue'}</div></div>
+        <div class="card stat click" data-act="nav" data-view="hours"><div class="lbl">Hours this week</div><div class="num">${fmtH(wk.total)}</div><div class="sub">${fmtH(wk.bill)} billable${wk.amt?' · '+money(wk.amt):''}</div></div>
+        <div class="card stat click" data-act="nav" data-view="templates"><div class="lbl">Templates</div><div class="num">${state.templates.length}</div><div class="sub">${state.notes.length} notes saved</div></div>
+      </div>
+      <div class="cols">
+        <div class="card pad">
+          <div class="sec-title">Application pipeline <a data-act="nav" data-view="applications">View all</a></div>
+          ${A.length ? `<div class="pipe">${STATUSES.map(s => `<span title="${s}: ${sc(s)}" style="width:${sc(s)/total*100}%;background:${STATUS_COLOR[s]}"></span>`).join('')}</div>
+          <div class="legend">${STATUSES.map(s => `<span><i style="background:${STATUS_COLOR[s]}"></i>${s} ${sc(s)}</span>`).join('')}</div>` : `<div style="color:var(--muted)">No applications yet.</div>`}
+          ${interviews.length ? `<div class="sec-title" style="margin-top:16px">Upcoming interviews</div><ul class="mini">${interviews.slice(0,4).map(a => `<li><span class="t">${esc(a.role)}${a.company?' — '+esc(a.company):''}</span><span class="m">${fmtDate(a.followUp)}</span></li>`).join('')}</ul>` : ''}
+        </div>
+        <div class="card pad">
+          <div class="sec-title">Up next <a data-act="nav" data-view="tasks">All tasks</a></div>
+          ${upcoming.length ? `<ul class="mini">${upcoming.map(t => `<li><input type="checkbox" data-done="${t.id}" title="Mark done" style="accent-color:var(--accent)"><span class="t">${esc(t.title)}</span><span class="pill p-${t.priority}">${esc(t.priority)}</span><span class="m ${t.due && t.due < today() ? 'overdue':''}">${t.due?fmtDate(t.due):'No date'}</span></li>`).join('')}</ul>` : `<div style="color:var(--muted)">No open tasks. 🎉</div>`}
+        </div>
+        <div class="card pad">
+          <div class="sec-title">Recent applications <a data-act="add" data-store="applications">+ Add</a></div>
+          ${recent.length ? `<ul class="mini">${recent.map(a => `<li><span class="t">${esc(a.role)}<span class="m">${a.source?' · '+esc(a.source):''}</span></span><span class="pill s-${cls(a.status)}">${esc(a.status)}</span></li>`).join('')}</ul>` : `<div style="color:var(--muted)">Nothing tracked yet.</div>`}
+        </div>
+        ${pinned.length ? `<div class="card pad"><div class="sec-title">Pinned notes <a data-act="nav" data-view="notes">All notes</a></div><ul class="mini">${pinned.map(n => `<li><span class="t"><b>${esc(n.title)}</b> <span class="m">${esc((n.body||'').slice(0,80))}</span></span></li>`).join('')}</ul></div>` : ''}
+      </div>`;
+    }
+  },
+
+  /* ---- Applications ---- */
+  applications: {
+    head: () => {
+      const sources = uniq(state.applications.map(a => a.source));
+      return headBar('Applications', 'applications',
+        searchBox('applications', 'Search role, company, notes…') +
+        selBox('applications.status', ['All', ...STATUSES], 'Status') +
+        selBox('applications.source', ['All', ...sources], 'Source'));
+    },
+    list: () => {
+      const A = state.applications, f = ui.applications;
+      if (!A.length) return emptyState('applications', 'No applications yet', 'Track every job you apply to — source, status and follow-ups.');
+      const cnt = s => A.filter(a => a.status === s).length;
+      const statCard = (label, val, key) => `<div class="card stat click ${f.status===key?'sel':''}" data-act="fstatus" data-val="${key}"><div class="lbl">${label}</div><div class="num" ${key!=='All'?`style="color:${STATUS_COLOR[key]}"`:''}>${val}</div></div>`;
+      // by source
+      const bySrc = {};
+      A.forEach(a => { const s = a.source || 'Not set'; (bySrc[s] ||= {total:0}); bySrc[s].total++; bySrc[s][a.status] = (bySrc[s][a.status]||0) + 1; });
+      const srcRows = Object.entries(bySrc).sort((a,b) => b[1].total - a[1].total);
+      const rows = A.filter(a => (f.status==='All' || a.status===f.status) && (f.source==='All' || a.source===f.source) && match(a, f.q, ['role','company','source','notes','rate']))
+        .sort((a,b) => (b.dateApplied||'').localeCompare(a.dateApplied||''));
+      return `
+      <div class="stats">${statCard('All sent', A.length, 'All')}${STATUSES.map(s => statCard(s, cnt(s), s)).join('')}</div>
+      <div class="card" style="margin-bottom:16px"><div class="tbl-wrap"><table>
+        <thead><tr><th>Job post source</th><th class="num">Sent</th>${STATUSES.map(s=>`<th class="num">${s}</th>`).join('')}</tr></thead>
+        <tbody>${srcRows.map(([s, c]) => `<tr><td><a data-act="fsource" data-val="${esc(s==='Not set'?'All':s)}" style="cursor:pointer">${esc(s)}</a></td><td class="num"><b>${c.total}</b></td>${STATUSES.map(st=>`<td class="num">${c[st]||0}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div></div>
+      ${rows.length ? `<div class="card"><div class="tbl-wrap"><table>
+        <thead><tr><th>Applied</th><th>Role / Company</th><th>Source</th><th>Status</th><th>Interview / follow-up</th><th></th></tr></thead>
+        <tbody>${rows.map(a => `<tr>
+          <td>${fmtDate(a.dateApplied)}</td>
+          <td><b>${esc(a.role)}</b>${a.company?`<div class="sub">${esc(a.company)}${a.rate?' · '+esc(a.rate):''}</div>`:a.rate?`<div class="sub">${esc(a.rate)}</div>`:''}</td>
+          <td>${a.source?`<span class="tag">${esc(a.source)}</span>`:'—'}</td>
+          <td><select class="inline pill s-${cls(a.status)}" data-status="${a.id}">${STATUSES.map(s=>`<option ${s===a.status?'selected':''}>${s}</option>`).join('')}</select></td>
+          <td>${a.followUp?fmtDate(a.followUp):'—'}</td>
+          ${actions('applications', a.id, a.link ? `<a class="icon-btn" title="Open job post" href="${esc(a.link)}" target="_blank" rel="noopener">${ico('link')}</a>` : '')}
+        </tr>`).join('')}</tbody></table></div></div>` : `<div class="card empty"><b>No matches</b>Try a different search or filter.</div>`}`;
+    }
+  },
+
+  /* ---- Templates ---- */
+  templates: {
+    head: () => headBar('Templates', 'templates', searchBox('templates', 'Search templates…') + selBox('templates.cat', ['All', ...TEMPLATE_CATS], 'Category')),
+    list: () => {
+      const f = ui.templates;
+      if (!state.templates.length) return emptyState('templates', 'No templates yet', 'Upload contracts, proposals and other files you reuse with clients.');
+      const rows = state.templates.filter(t => (f.cat==='All' || t.category===f.cat) && match(t, f.q, ['name','description','content','fileName','category']))
+        .sort((a,b) => (a.name||'').localeCompare(b.name||''));
+      if (!rows.length) return `<div class="card empty"><b>No matches</b>Try a different search or category.</div>`;
+      return `<div class="grid-cards">${rows.map(t => `<div class="card gcard">
+        <h3><span>${esc(t.name)}</span></h3>
+        <div class="meta"><span class="tag">${esc(t.category)}</span><span>Updated ${new Date(t.updated||t.created).toLocaleDateString()}</span></div>
+        ${t.fileName ? `<div class="file-chip">${ico('file',16)}<span>${esc(t.fileName)}</span><span style="margin-left:auto;color:var(--muted)">${fmtSize(t.fileSize)}</span></div>` : ''}
+        ${t.description ? `<div class="body">${esc(t.description)}</div>` : ''}
+        <div class="foot">
+          ${t.fileName ? `<button class="btn sm" data-act="download" data-id="${t.id}">Download</button>` : ''}
+          ${t.content ? `<button class="btn sm" data-act="copy" data-id="${t.id}">Copy text</button>` : ''}
+          <span class="sp"></span>
+          <button class="icon-btn" title="Edit / replace file" data-act="edit" data-store="templates" data-id="${t.id}">${ico('edit')}</button>
+          <button class="icon-btn del" title="Delete" data-act="del" data-store="templates" data-id="${t.id}">${ico('del')}</button>
+        </div></div>`).join('')}</div>`;
+    }
+  },
+
+  /* ---- Tasks ---- */
+  tasks: {
+    head: () => headBar('Tasks', 'tasks', searchBox('tasks', 'Search tasks…') + selBox('tasks.show', ['Open','Overdue','Done','Everything'], 'Show') + selBox('tasks.priority', ['All','High','Medium','Low'], 'Priority')),
+    list: () => {
+      const f = ui.tasks, t0 = today();
+      if (!state.tasks.length) return emptyState('tasks', 'No tasks yet', 'Add what you need to get done — tick them off as you go.');
+      const pr = {High:0, Medium:1, Low:2};
+      const rows = state.tasks.filter(t => {
+        const done = t.status === 'Done';
+        if (f.show === 'Open' && done) return false;
+        if (f.show === 'Done' && !done) return false;
+        if (f.show === 'Overdue' && (done || !t.due || t.due >= t0)) return false;
+        return (f.priority==='All' || t.priority===f.priority) && match(t, f.q, ['title','related','notes']);
+      }).sort((a,b) => (a.status==='Done') - (b.status==='Done') || (a.due||'9999').localeCompare(b.due||'9999') || pr[a.priority]-pr[b.priority]);
+      if (!rows.length) return `<div class="card empty"><b>${f.show==='Open'?'All caught up':'No matches'}</b>${f.show==='Open'?'No open tasks right now.':'Try a different filter.'}</div>`;
+      return `<div class="card"><div class="tbl-wrap"><table>
+        <thead><tr><th class="chk-cell"></th><th>Task</th><th>Due</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+        <tbody>${rows.map(t => { const done = t.status==='Done'; const od = !done && t.due && t.due < t0; return `<tr class="${done?'done':''}">
+          <td class="chk-cell"><input type="checkbox" data-done="${t.id}" ${done?'checked':''} title="Mark done"></td>
+          <td><span class="ttl">${esc(t.title)}</span>${t.related||t.notes?`<div class="sub">${esc(t.related||'')}${t.related&&t.notes?' · ':''}${esc((t.notes||'').slice(0,70))}</div>`:''}</td>
+          <td class="${od?'overdue':''}">${t.due?fmtDate(t.due):'—'}${od?' · overdue':''}</td>
+          <td><span class="pill p-${t.priority}">${esc(t.priority)}</span></td>
+          <td>${esc(t.status)}</td>
+          ${actions('tasks', t.id)}</tr>`; }).join('')}</tbody></table></div></div>`;
+    }
+  },
+
+  /* ---- Hours ---- */
+  hours: {
+    head: () => {
+      const clients = uniq(state.hours.map(h => h.client));
+      return headBar('Hours', 'hours', selBox('hours.period', ['This week','Last week','This month','Last month','All time'], 'Period') + selBox('hours.client', ['All', ...clients], 'Client') + `<button class="btn" data-act="csv">Export CSV</button>`);
+    },
+    list: () => {
+      const f = ui.hours;
+      if (!state.hours.length) return emptyState('hours', 'No hours logged yet', 'Log time per client so invoicing is easy at the end of the week.');
+      const rows = state.hours.filter(h => inPeriod(h.date, f.period) && (f.client==='All' || h.client===f.client))
+        .sort((a,b) => (b.date||'').localeCompare(a.date||'') || (b.created||0)-(a.created||0));
+      const tot = hoursTotals(rows);
+      const byC = {};
+      rows.forEach(r => { const c = r.client || '—'; (byC[c] ||= []).push(r); });
+      return `
+      <div class="stats">
+        <div class="card stat"><div class="lbl">Total hours</div><div class="num">${fmtH(tot.total)}</div><div class="sub">${f.period}</div></div>
+        <div class="card stat"><div class="lbl">Billable hours</div><div class="num">${fmtH(tot.bill)}</div><div class="sub">${fmtH(tot.total - tot.bill)} non-billable</div></div>
+        <div class="card stat"><div class="lbl">Est. earnings</div><div class="num">${money(tot.amt)}</div><div class="sub">Billable hrs × rate</div></div>
+      </div>
+      ${rows.length ? `
+      ${Object.keys(byC).length > 1 ? `<div class="card" style="margin-bottom:16px"><div class="tbl-wrap"><table><thead><tr><th>Client / project</th><th class="num">Hours</th><th class="num">Billable</th><th class="num">Amount</th></tr></thead><tbody>
+        ${Object.entries(byC).map(([c, rs]) => { const t = hoursTotals(rs); return `<tr><td>${esc(c)}</td><td class="num"><b>${fmtH(t.total)}</b></td><td class="num">${fmtH(t.bill)}</td><td class="num">${t.amt?money(t.amt):'—'}</td></tr>`; }).join('')}
+      </tbody></table></div></div>` : ''}
+      <div class="card"><div class="tbl-wrap"><table>
+        <thead><tr><th>Date</th><th>Client / project</th><th>Work done</th><th class="num">Hours</th><th class="num">Amount</th><th></th></tr></thead>
+        <tbody>${rows.map(h => `<tr>
+          <td>${fmtDate(h.date)}</td>
+          <td>${esc(h.client)}${h.billable?'':' <span class="tag">non-billable</span>'}</td>
+          <td>${esc(h.task||'')}${h.notes?`<div class="sub">${esc(h.notes.slice(0,70))}</div>`:''}</td>
+          <td class="num"><b>${fmtH(num(h.hours))}</b></td>
+          <td class="num">${h.billable && num(h.rate) ? money(num(h.hours)*num(h.rate)) : '—'}</td>
+          ${actions('hours', h.id)}</tr>`).join('')}</tbody></table></div></div>` : `<div class="card empty"><b>No entries for this period</b>Pick another period or log new hours.</div>`}`;
+    }
+  },
+
+  /* ---- Notes ---- */
+  notes: {
+    head: () => headBar('Notes', 'notes', searchBox('notes', 'Search notes…') + selBox('notes.tag', ['All', ...uniq(state.notes.map(n => n.tag))], 'Tag')),
+    list: () => {
+      const f = ui.notes;
+      if (!state.notes.length) return emptyState('notes', 'No notes yet', 'Keep client details, reminders, links and ideas in one place.');
+      const rows = state.notes.filter(n => (f.tag==='All' || n.tag===f.tag) && match(n, f.q, ['title','body','tag']))
+        .sort((a,b) => (!!b.pinned - !!a.pinned) || (b.updated||0)-(a.updated||0));
+      if (!rows.length) return `<div class="card empty"><b>No matches</b>Try a different search or tag.</div>`;
+      return `<div class="grid-cards">${rows.map(n => `<div class="card gcard">
+        <h3><span>${esc(n.title)}</span><button class="icon-btn ${n.pinned?'pin-on':''}" title="${n.pinned?'Unpin':'Pin'}" data-act="pin" data-id="${n.id}">${ico('pin')}</button></h3>
+        <div class="meta">${n.tag?`<span class="tag">${esc(n.tag)}</span>`:''}<span>${new Date(n.updated||n.created).toLocaleDateString()}</span></div>
+        ${n.body?`<div class="body">${esc(n.body)}</div>`:''}
+        <div class="foot"><button class="btn sm" data-act="copynote" data-id="${n.id}">Copy</button><span class="sp"></span>
+          <button class="icon-btn" title="Edit" data-act="edit" data-store="notes" data-id="${n.id}">${ico('edit')}</button>
+          <button class="icon-btn del" title="Delete" data-act="del" data-store="notes" data-id="${n.id}">${ico('del')}</button></div>
+      </div>`).join('')}</div>`;
+    }
+  },
+};
+
+/* ---------- Modal / forms ---------- */
+function showModal(html){
+  $('#modal-root').innerHTML = `<div class="backdrop" id="backdrop"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+  $('#backdrop').addEventListener('mousedown', e => { if (e.target.id === 'backdrop') closeModal(); });
+  const first = $('#modal-root').querySelector('input:not([type=checkbox]):not([type=file]),textarea,button.primary');
+  if (first) first.focus();
+}
+function closeModal(){ $('#modal-root').innerHTML = ''; }
+
+function datalists(){
+  const lists = {
+    sources: uniq([...DEFAULT_SOURCES, ...state.applications.map(a => a.source)]),
+    clients: uniq([...state.hours.map(h => h.client), ...state.tasks.map(t => t.related), ...state.applications.filter(a=>a.status==='Passed').map(a => a.company)]),
+    tags: uniq(state.notes.map(n => n.tag)),
+  };
+  return Object.entries(lists).map(([k, v]) => `<datalist id="dl-${k}">${v.map(o => `<option value="${esc(o)}">`).join('')}</datalist>`).join('');
+}
+function fieldHTML(f, v, rec){
+  const id = 'f-' + f.k;
+  let inp;
+  if (f.t === 'select') inp = `<select id="${id}" name="${f.k}">${f.opts.map(o => `<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  else if (f.t === 'textarea') inp = `<textarea id="${id}" name="${f.k}" rows="${f.rows||4}">${esc(v)}</textarea>`;
+  else if (f.t === 'check') inp = `<label class="chk"><input type="checkbox" id="${id}" name="${f.k}" ${v?'checked':''}> ${esc(f.cl||'')}</label>`;
+  else if (f.t === 'file') inp = `<input type="file" id="${id}" name="${f.k}">${rec && rec.fileName ? `<div class="hint">Current file: <b>${esc(rec.fileName)}</b> — choose a new file only if you want to replace it.</div>` : ''}`;
+  else inp = `<input type="${f.t}" id="${id}" name="${f.k}" value="${esc(v)}" ${f.req?'required':''} ${f.step?`step="${f.step}" min="0"`:''} ${f.list?`list="dl-${f.list}"`:''} ${f.ph?`placeholder="${esc(f.ph)}"`:''} autocomplete="off">`;
+  const full = (f.t === 'textarea' || f.full) ? ' full' : '';
+  return `<div class="fld${full}">${f.t==='check'?'':`<label for="${id}">${esc(f.l)}${f.req?' *':''}</label>`}${inp}</div>`;
+}
+function openForm(store, id, preset){
+  const sc = SCHEMA[store];
+  const rec = id ? state[store].find(r => r.id === id) : null;
+  if (id && !rec) return;
+  const val = f => rec ? rec[f.k] : preset && preset[f.k] !== undefined ? preset[f.k] : (typeof f.def === 'function' ? f.def() : f.def ?? '');
+  showModal(`<form id="frm" novalidate><h2>${rec ? 'Edit' : 'Add'} ${sc.label.toLowerCase()}</h2>
+    <div class="fgrid">${sc.fields.map(f => fieldHTML(f, val(f), rec)).join('')}</div>${datalists()}
+    <div class="mact">${rec?`<button type="button" class="btn danger" data-act="del" data-store="${store}" data-id="${rec.id}" style="margin-right:auto">Delete</button>`:''}
+    <button type="button" class="btn" data-act="close">Cancel</button><button type="submit" class="btn primary">Save</button></div></form>`);
+  $('#frm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const form = e.target, fd = new FormData(form);
+    for (const f of sc.fields){
+      if (f.req && f.t !== 'file' && !String(fd.get(f.k) ?? '').trim()){ toast(`Please fill in “${f.l}”`); form.querySelector(`[name="${f.k}"]`).focus(); return; }
+    }
+    const obj = rec ? {...rec} : {id: uid(), created: Date.now()};
+    for (const f of sc.fields){
+      if (f.t === 'file'){ const file = fd.get(f.k); if (file && file.size){ obj.file = file; obj.fileName = file.name; obj.fileType = file.type; obj.fileSize = file.size; } }
+      else if (f.t === 'check') obj[f.k] = fd.get(f.k) === 'on';
+      else if (f.t === 'number') obj[f.k] = fd.get(f.k) === '' ? '' : num(fd.get(f.k));
+      else obj[f.k] = String(fd.get(f.k) ?? '').trim();
+    }
+    obj.updated = Date.now();
+    try { await save(store, obj); } catch(err){ toast('Could not save: ' + (err && err.message || err)); return; }
+    closeModal(); render(); toast(`${sc.label} ${rec ? 'updated' : 'added'}`);
+  });
+}
+function confirmDelete(store, id){
+  const rec = state[store].find(r => r.id === id); if (!rec) return;
+  const name = rec.role || rec.name || rec.title || rec.task || rec.client || 'this item';
+  showModal(`<h2>Delete ${SCHEMA[store].label.toLowerCase()}?</h2><p>“${esc(name)}” will be removed permanently.</p>
+    <div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" style="background:var(--rejected);border-color:var(--rejected)" data-act="confirmdel" data-store="${store}" data-id="${id}">Delete</button></div>`);
+}
+
+/* ---------- Toast ---------- */
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); }
+
+/* ---------- Clipboard / download ---------- */
+async function copyText(text){
+  try { await navigator.clipboard.writeText(text); }
+  catch(e){ const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch(_){} ta.remove(); }
+  toast('Copied');
+}
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+
+/* ---------- Backup ---------- */
+async function exportBackup(){
+  const out = {app:'cio-ea-dashboard', version:1, exported:new Date().toISOString(), data:{}};
+  for (const s of STORES){
+    out.data[s] = await Promise.all(state[s].map(async r => {
+      if (r.file instanceof Blob){ const {file, ...rest} = r; return {...rest, fileData: await blobToDataURL(file)}; }
+      return r;
+    }));
+  }
+  downloadBlob(new Blob([JSON.stringify(out)], {type:'application/json'}), `cio-dashboard-backup-${today()}.json`);
+  toast('Backup downloaded');
+}
+async function importBackup(file){
+  let data;
+  try { data = JSON.parse(await file.text()); } catch(e){ toast('That file is not a valid backup'); return; }
+  if (!data || data.app !== 'cio-ea-dashboard' || !data.data){ toast('That file is not a dashboard backup'); return; }
+  const n = STORES.reduce((s, k) => s + (data.data[k]||[]).length, 0);
+  showModal(`<h2>Import backup?</h2><p>This replaces everything currently in the dashboard with the ${n} items from the backup (exported ${esc(new Date(data.exported).toLocaleString())}).</p>
+    <div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" id="do-import">Replace &amp; import</button></div>`);
+  $('#do-import').onclick = async () => {
+    await clearAll();
+    for (const s of STORES){
+      for (const r of (data.data[s] || [])){
+        if (r.fileData){ try { r.file = await (await fetch(r.fileData)).blob(); } catch(e){} delete r.fileData; }
+        await save(s, r);
+      }
+    }
+    closeModal(); render(); toast('Backup imported');
+  };
+}
+function exportHoursCSV(){
+  const f = ui.hours;
+  const rows = state.hours.filter(h => inPeriod(h.date, f.period) && (f.client==='All' || h.client===f.client)).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  if (!rows.length){ toast('No entries to export'); return; }
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = [['Date','Client/Project','Work done','Hours','Billable','Rate','Amount','Notes'].join(',')];
+  rows.forEach(h => lines.push([h.date, h.client, h.task, num(h.hours), h.billable?'Yes':'No', h.rate, h.billable ? (num(h.hours)*num(h.rate)).toFixed(2) : '', h.notes].map(q).join(',')));
+  downloadBlob(new Blob([lines.join('\n')], {type:'text/csv'}), `hours-${f.period.toLowerCase().replace(/\s/g,'-')}-${today()}.csv`);
+}
+
+/* ---------- Events ---------- */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const {act, store, id} = b.dataset;
+  if (act === 'nav'){ ui.view = b.dataset.view; lsSet('cio-view', ui.view); render(); window.scrollTo(0,0); }
+  else if (act === 'add') openForm(store);
+  else if (act === 'edit') openForm(store, id);
+  else if (act === 'del') confirmDelete(store, id);
+  else if (act === 'confirmdel'){ const label = SCHEMA[store].label; await remove(store, id); closeModal(); render(); toast(`${label} deleted`); }
+  else if (act === 'close') closeModal();
+  else if (act === 'fstatus'){ ui.applications.status = b.dataset.val; render(); }
+  else if (act === 'fsource'){ ui.applications.source = b.dataset.val; render(); }
+  else if (act === 'download'){ const t = state.templates.find(r => r.id === id); if (t && t.file) downloadBlob(t.file, t.fileName); }
+  else if (act === 'copy'){ const t = state.templates.find(r => r.id === id); if (t) copyText(t.content || ''); }
+  else if (act === 'copynote'){ const n = state.notes.find(r => r.id === id); if (n) copyText((n.title ? n.title + '\n\n' : '') + (n.body || '')); }
+  else if (act === 'pin'){ const n = state.notes.find(r => r.id === id); if (n){ await save('notes', {...n, pinned: !n.pinned}); render(); } }
+  else if (act === 'export') exportBackup();
+  else if (act === 'import') $('#import-file').click();
+  else if (act === 'csv') exportHoursCSV();
+});
+document.addEventListener('change', async e => {
+  const el = e.target;
+  if (el.dataset.status){
+    const a = state.applications.find(r => r.id === el.dataset.status);
+    if (a){ await save('applications', {...a, status: el.value, updated: Date.now()}); render(); toast(`Marked as ${el.value}`); }
+  } else if (el.dataset.done){
+    const t = state.tasks.find(r => r.id === el.dataset.done);
+    if (t){ await save('tasks', {...t, status: el.checked ? 'Done' : 'To do', updated: Date.now()}); render(); if (el.checked) toast('Task done ✓'); }
+  } else if (el.id === 'import-file' && el.files[0]){ await importBackup(el.files[0]); el.value = ''; }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal-root').innerHTML) closeModal(); });
+
+/* ---------- Start ---------- */
+(async () => {
+  await openDB();
+  try { await loadAll(); } catch(e){ STORES.forEach(s => state[s] = state[s] || []); }
+  render();
+})();
+</script>
+</body>
+</html>
